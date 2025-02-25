@@ -12,82 +12,44 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { ChevronLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const ITEMS_PER_PAGE = 6;
 
-const DEMO_FOLDERS: Folder[] = [
-  {
-    id: 1,
-    name: "Nature",
-    thumbnail: "https://images.unsplash.com/photo-1572800579830-fd2e0f2b5892",
-  },
-  {
-    id: 2,
-    name: "Cities",
-    thumbnail: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000",
-  },
-];
-
-const DEMO_VIDEOS: Video[] = [
-  {
-    id: 1,
-    title: "Beautiful Sunset Time-lapse",
-    thumbnail: "https://images.unsplash.com/photo-1572800579830-fd2e0f2b5892",
-    duration: "3:45",
-    folderId: 1,
-  },
-  {
-    id: 2,
-    title: "Mountain Adventure",
-    thumbnail: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b",
-    duration: "5:20",
-    folderId: 1,
-  },
-  {
-    id: 3,
-    title: "Ocean Waves",
-    thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-    duration: "2:15",
-    folderId: 1,
-  },
-  {
-    id: 4,
-    title: "City Life",
-    thumbnail: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000",
-    duration: "4:10",
-    folderId: 2,
-  },
-  {
-    id: 5,
-    title: "Forest Morning",
-    thumbnail: "https://images.unsplash.com/photo-1440342359743-84fcb8c21f21",
-    duration: "3:30",
-    folderId: 1,
-  },
-  {
-    id: 6,
-    title: "Desert Adventure",
-    thumbnail: "https://images.unsplash.com/photo-1509316785289-025f5b846b35",
-    duration: "6:15",
-    folderId: null,
-  },
-  {
-    id: 7,
-    title: "Night City",
-    thumbnail: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000",
-    duration: "3:20",
-    folderId: 2,
-  },
-];
+async function fetchFilesAndFolders(path: string) {
+  const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch files and folders');
+  }
+  return response.json();
+}
 
 export const VideoGrid = () => {
-  const [currentFolder, setCurrentFolder] = useState<number | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredVideos = DEMO_VIDEOS.filter(
-    (video) => video.folderId === currentFolder
-  );
-  const items = currentFolder === null ? DEMO_FOLDERS : filteredVideos;
+  const basePath = import.meta.env.VITE_MEDIA_PATH || '/media/recordings';
+  const currentPath = currentFolder || basePath;
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['files', currentPath],
+    queryFn: () => fetchFilesAndFolders(currentPath),
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Error loading files: {error.message}
+      </div>
+    );
+  }
+
+  const { folders = [], videos = [] } = data || {};
+  const items = currentFolder === null ? folders : videos;
   const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedItems = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -109,17 +71,17 @@ export const VideoGrid = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {currentFolder === null
-          ? paginatedItems.map((folder) => (
+          ? paginatedItems.map((folder: Folder) => (
               <FolderCard
                 key={folder.id}
-                folder={folder as Folder}
+                folder={folder}
                 onClick={() => {
-                  setCurrentFolder(folder.id);
+                  setCurrentFolder(folder.path);
                   setCurrentPage(1);
                 }}
               />
             ))
-          : paginatedItems.map((video) => (
+          : paginatedItems.map((video: Video) => (
               <VideoCard
                 key={video.id}
                 title={video.title}
