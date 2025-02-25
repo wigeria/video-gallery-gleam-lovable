@@ -8,7 +8,7 @@ const Index = () => {
         <div className="space-y-2 mb-8">
           <h1 className="text-3xl font-semibold tracking-tight">Video Gallery</h1>
           <p className="text-muted-foreground">
-            Discover and watch amazing videos
+            Browse through our video collection
           </p>
         </div>
         <VideoGrid />
