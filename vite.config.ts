@@ -20,4 +20,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  publicDir: import.meta.env.VITE_MEDIA_PATH || '/media/recordings',
 }));
